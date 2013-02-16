@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Assignment 8</title>
+</head>
+<body>
+
+<div id="fb-root"></div>
+
+<center>
+<div id="fbPanel"></div>
+<br />
+<br />
+<div class="fb-login-button" data-show-faces="true" data-width="200" data-max-rows="1"></div>
+</center>
+
+<script>
+// Elijah Newman-Gomez
+// CSE 594
+// Assignment 8
+//
+// Purpose: Get basic Facebook functionality working with a login button and
+// grab some of the user's information as well.
+//
+// Using the official XFBML login button will show the profile pictures of the user's
+// friends who also use the Facebook app as well as some other neat features.
+//
+// Both the official login button and the "click here" login link function as required
+// in the assignment description.
+//
+// References:
+//   http://developers.facebook.com/docs/reference/api/
+//   http://developers.facebook.com/docs/getting-started/graphapi/
+//   http://developers.facebook.com/tools/explorer
+
+var gUserProfile = undefined;
+var gFBPanel = document.getElementById("fbPanel");
+
+window.fbAsyncInit = function() {
+  FB.init(
+    {
+      appId      : '473600756038526', // App ID
+      channelUrl : '//www.anarchyarcade.com/cse/mobile/channel.html', // Channel File
+      status     : true, // check login status
+      cookie     : true, // enable cookies to allow the server to access the session
+      xfbml      : true  // parse XFBML (needed for the official login button DIV)
+    }
+  );
+
+  // Check the user's login status (this can trigger a auth.login callback in certain cases)
+  FB.getLoginStatus(function(response) {
+
+    // Now hook into FUTURE login attempts
+    FB.Event.subscribe('auth.login', function(response) { loginResponse(response); });
+
+    // And also do the logic for THIS attempt
+    loginResponse(response);
+
+  });
+
+};
+
+// Load the SDK Asynchronously
+(function(d){
+  var js, id = 'facebook-jssdk', ref = d.getElementsByTagName('script')[0];
+  if (d.getElementById(id)) {return;}
+  js = d.createElement('script'); js.id = id; js.async = true;
+  js.src = "//connect.facebook.net/en_US/all.js";
+  ref.parentNode.insertBefore(js, ref);
+}(document));
+
+function loginResponse(response) {
+    if( response.status === 'connected' ) {
+      DrawFacebookInfo();
+    }
+    else if( response.status === 'not_authorized' ) {
+      // not_authorized
+      DrawLoginButton();
+    }
+    else {
+      DrawLoginButton();
+    }
+}
+
+function DrawFacebookInfo(){
+  FB.api('/me', function(response) {
+
+    gUserProfile = response;
+
+    // remove the contents of the fbPanel
+    ClearFacebookPanel();
+
+    // construct our new HTML
+    var buf = '<table border=0><tr><td>';
+    buf += '<img src="http://graph.facebook.com/' + gUserProfile.id + '/picture?type=large" />';
+    buf += '</td><td>';
+    buf += 'UserID: ' + gUserProfile.id + '<br>';
+    buf += 'Name: ' + gUserProfile.name + '<br>';
+    buf += 'First Name: ' + gUserProfile.first_name + '<br>';
+    buf += 'Last Name: ' + gUserProfile.last_name + '<br>';
+    buf += 'Profile URL: ' + gUserProfile.link + '<br>';
+    buf += 'Username: ' + gUserProfile.username + '<br>';
+    buf += 'Sex: ' + gUserProfile.gender + '<br>';
+    buf += 'Locale: ' + gUserProfile.locale;
+    buf += '</td></tr></table>';
+
+    // turn it into nodes and append it
+    var fragment = create(buf);
+    gFBPanel.appendChild(fragment);
+
+  });
+}
+
+function DrawLoginButton() {
+  // remove the contents of the fbPanel
+  ClearFacebookPanel();
+
+  // construct our new HTML
+  var buf = 'You are not logged in.<br />Login with the button below, or <a href="javascript:FB.login();">click here</a>.';
+
+  // turn it into nodes and append it
+  var fragment = create(buf);
+  gFBPanel.appendChild(fragment);
+}
+
+function ClearFacebookPanel(){
+  while( gFBPanel.hasChildNodes() ){
+    gFBPanel.removeChild(gFBPanel.lastChild);
+  }
+}
+
+function create(htmlStr) {
+  // converts a string into nodes without disturbing the active DOM
+  // innerHTML is not used on the active document here
+
+  var frag = document.createDocumentFragment();
+  var temp = document.createElement('div');
+
+  temp.innerHTML = htmlStr;
+
+  while( temp.firstChild ) {
+    frag.appendChild(temp.firstChild);
+  }
+
+  return frag;
+}
+
+</script>
+
+</body>
+</html>
