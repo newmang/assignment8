@@ -9,9 +9,10 @@
 
 <center>
 <div id="fbPanel"></div>
-<br />
-<br />
-<div class="fb-login-button" data-show-faces="true" data-width="200" data-max-rows="1"></div>
+<br /><br />
+<div id="xfbmlContainer">
+  <div class="fb-login-button" data-show-faces="true" data-width="200" data-max-rows="1"></div>
+</div>
 </center>
 
 <script>
@@ -19,14 +20,24 @@
 // CSE 594
 // Assignment 8
 //
+// LIVE version of this document at:
+// http://www.anarchyarcade.com/cse/mobile/assignment8.html
+//
 // Purpose: Get basic Facebook functionality working with a login button and
 // grab some of the user's information as well.
 //
 // Using the official XFBML login button will show the profile pictures of the user's
-// friends who also use the Facebook app as well as some other neat features.
+// friends who also use the Facebook app as well as some other neat features. On some
+// Android devices it actually showed the Facebook login form as a pop-up "window". This
+// behavior was not present when using the text link on the same device.
 //
-// Both the official login button and the "click here" login link function as required
-// in the assignment description.
+// This functionality is intended to be added to the Assignment 6 mobile app, and so it 
+// references the Newmang Squares Facebook app:
+// https://developers.facebook.com/apps/473600756038526/
+//
+// Known Bugs: The XFBML login button does not refresh after you have logged in with the
+// text link instead. It must not be hooked into the auth.login message and no API method
+// could be found to refresh it manually.
 //
 // References:
 //   http://developers.facebook.com/docs/reference/api/
@@ -35,6 +46,7 @@
 
 var gUserProfile = undefined;
 var gFBPanel = document.getElementById("fbPanel");
+var gXFBMLContainer = document.getElementById("xfbmlContainer");
 
 window.fbAsyncInit = function() {
   FB.init(
@@ -58,6 +70,15 @@ window.fbAsyncInit = function() {
 
   });
 
+  // NOTE: Hooking into the auth.login event in parallel with calling FB.getLoginStatus can cause
+  // the loginResponse function to be called twice in the following case:
+  // 1. load the page while logged into Facebook
+  // 2. log out of Facebook using a different window
+  // 3. reloaed the page
+  // (tested on Firefox 18.0.2 and Internet Explorer 9)
+  //
+  // To avoid this and other unknown cases, the auth.login callback is not registered until AFTER
+  // the initial FB.getLoginStatus call returns.
 };
 
 // Load the SDK Asynchronously
@@ -69,17 +90,18 @@ window.fbAsyncInit = function() {
   ref.parentNode.insertBefore(js, ref);
 }(document));
 
+
+// Gets called when ever the login status has been changed or checked
+var gStatus = 0;
 function loginResponse(response) {
-    if( response.status === 'connected' ) {
-      DrawFacebookInfo();
-    }
-    else if( response.status === 'not_authorized' ) {
-      // not_authorized
-      DrawLoginButton();
-    }
-    else {
-      DrawLoginButton();
-    }
+  if( response.status === 'connected' && gStatus != 1 ) {
+    gStatus = 1;
+    DrawFacebookInfo();
+  }
+  else if( gStatus != 2 ) {
+    gStatus = 2;
+    DrawLoginButton();
+  }
 }
 
 function DrawFacebookInfo(){
